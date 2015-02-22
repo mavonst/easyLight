@@ -7,5 +7,5 @@
     <string name="toggle_light">LIGHT</string>
     <string name="torch_ON">OFF</string>
     <string name="torch_OFF">ON</string>
-
+	<string name="to_quit_msg">Press back again to leave</string>
 </resources>

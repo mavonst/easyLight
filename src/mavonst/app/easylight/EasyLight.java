@@ -19,23 +19,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 
 public class EasyLight extends ActionBarActivity
 {
-    Camera mCam;
+	private static final String APPNAME = EasyLight.class.getSimpleName();
+	
+	Camera mCam;
     ToggleButton mTorch;
     Parameters mCamParams;
     private Context mContext;
     AlertDialog.Builder builder;
     AlertDialog alertDialog;
-	
-	static final String[] LISTITEMS = { "Toggle LED" };
-	
-	boolean mHasFlash = false;
-	
-	private static final String APPNAME = EasyLight.class.getSimpleName();
+    
+    private long backPressed = 0; //counting number of back pressings of the user, if reaching 2 the app will be closed
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -64,24 +64,28 @@ public class EasyLight extends ActionBarActivity
         mTorch.setOnCheckedChangeListener(new OnCheckedChangeListener() { 
             @Override
             public void onCheckedChanged(CompoundButton buttonView,
-            		boolean isChecked) {
+            		boolean isChecked)
+            {            	
             	try{
-            		if(isChecked){
-            			mCamParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
-            			
-            		}else{
-            			mCamParams.setFlashMode(Parameters.FLASH_MODE_OFF);
-            		}
-            		mCam.setParameters(mCamParams);
-            		mCam.startPreview();
+                	if(isChecked){
+                		activateTorch();
+                	}else{
+                		deactivateTorch();
+                	}
             	}catch (Exception e) {
             		e.printStackTrace();
-            		mCam.stopPreview();
-            		mCam.release();
             	}
             }
         });
         mTorch.setChecked(true); //default activated
+        Toast.makeText(getApplicationContext(), "Hi there!", Toast.LENGTH_SHORT).show();
+	}
+	
+	@Override
+	protected void onStart()
+	{
+		super.onStart();
+		backPressed = 0;
 	}
 	
 	private void showAlertDialog(final String title, final String msg)
@@ -100,19 +104,43 @@ public class EasyLight extends ActionBarActivity
 		alert.show();
 	}
 	
+	private void activateTorch() throws Exception
+	{
+		mCamParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
+		mCamParams.setFocusMode("FOCUS_MODE_INFINITY");
+		mCam.setParameters(mCamParams);
+		mCam.startPreview();
+	}
+	
+	private void deactivateTorch() throws Exception
+	{
+		mCamParams.setFlashMode(Parameters.FLASH_MODE_OFF);
+		mCam.setParameters(mCamParams);
+		mCam.stopPreview();
+	}
+	
+	@Override
+	protected void onPause() {
+	    super.onPause();
+//	    if(mCam != null){
+//	        mCam.release();
+//	    }
+	    backPressed = 0;
+	}
+	
 	@Override
 	protected void onResume() {
 	    super.onResume();
 	    if(mCam == null){
 	        mCam = Camera.open();
-	    }
-	}
-	 
-	@Override
-	protected void onPause() {
-	    super.onPause();
-	    if(mCam != null){
-	        mCam.release();
+	        try {
+				if(mTorch.isChecked())
+					activateTorch();
+				else
+					deactivateTorch();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 	    }
 	}
 	
@@ -124,6 +152,20 @@ public class EasyLight extends ActionBarActivity
 	        mCam = null;
 	    }
 	}
+	
+
+    @Override
+    public void onBackPressed() {
+        if ((backPressed + 2000) > System.currentTimeMillis())
+        {
+            finish();
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(), getString(R.string.to_quit_msg), Toast.LENGTH_SHORT).show();
+            backPressed = System.currentTimeMillis();
+        }
+    }
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
