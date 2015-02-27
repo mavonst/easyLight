@@ -1,18 +1,46 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="mavonst.app.easylight.EasyLight"
-    tools:ignore="MergeRootFrame" >
+    tools:ignore="MergeRootFrame">
 
-    <ToggleButton
+    <LinearLayout 
+        android:id="@+id/container_inner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+            
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/title_text" />
+            
+      <ToggleButton
         android:id="@+id/toggleLight"
         android:layout_width="match_parent"
-        android:layout_height="314dp"
+        android:layout_height="200dp"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
         android:textOn="@string/torch_ON"
         android:textOff="@string/torch_OFF" />
+ 
+      <TextView
+        android:id="@+id/copyright_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom|center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/copyright_disclaimer" />
+        
+      </LinearLayout>
+
 
 </FrameLayout>
 

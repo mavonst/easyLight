@@ -1,16 +1,15 @@
 package mavonst.app.easylight;
 
-import java.util.List;
+import mavonst.app.easylight.EasyLightService.LocalBinder;
 
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
-import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.hardware.Camera;
-import android.hardware.Camera.Parameters;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,153 +24,113 @@ import android.widget.ToggleButton;
 
 public class EasyLight extends ActionBarActivity
 {
-	private static final String APPNAME = EasyLight.class.getSimpleName();
+	ToggleButton mTorch;
+	EasyLightService mService;
+	boolean mBound;
 	
-	Camera mCam;
-    ToggleButton mTorch;
-    Parameters mCamParams;
-    private Context mContext;
-    AlertDialog.Builder builder;
-    AlertDialog alertDialog;
-    
-    private long backPressed = 0; //counting number of back pressings of the user, if reaching 2 the app will be closed
+	private long backPressed = 0; //counting number of back pressings of the user, when pressed more than 1 time in 2s the app will be closed
 
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            LocalBinder binder = (LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+	
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		mContext = EasyLight.this;
-		if(!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH))
-		{
-			showAlertDialog("Error", "Sorry, your device doesn't support camera flash light!");
-			return;
-		}
 		
-		mCam = Camera.open();
-		if(mCam == null){
-			showAlertDialog("Error", "Sorry, the camera of your device is currently busy!");
-			return;
-		}
-		mCamParams = mCam.getParameters();
-		List<String> flashModes = mCamParams.getSupportedFlashModes();
-		if(!flashModes.contains(Parameters.FLASH_MODE_TORCH))
-		{
-			showAlertDialog("Error", "Sorry, your device doesn't support flash torch!");
-			return;
-		}
-		
-        mTorch = (ToggleButton) findViewById(R.id.toggleLight);
-        mTorch.setOnCheckedChangeListener(new OnCheckedChangeListener() { 
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView,
-            		boolean isChecked)
-            {            	
-            	try{
-                	if(isChecked){
-                		activateTorch();
-                	}else{
-                		deactivateTorch();
-                	}
-            	}catch (Exception e) {
-            		e.printStackTrace();
-            	}
-            }
-        });
-        mTorch.setChecked(true); //default activated
-        Toast.makeText(getApplicationContext(), "Hi there!", Toast.LENGTH_SHORT).show();
+		mTorch = (ToggleButton) findViewById(R.id.toggleLight);
+		mTorch.setOnCheckedChangeListener(new OnCheckedChangeListener() { 
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked)
+			{    
+				try{
+					if(isChecked){
+						mService.activateTorch();
+					}else{
+						mService.deactivateTorch();
+					}
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		Toast.makeText(getApplicationContext(), R.string.hello_msg, Toast.LENGTH_SHORT).show();
 	}
-	
+
 	@Override
 	protected void onStart()
 	{
 		super.onStart();
+		Log.d(Utils.APPNAME, "onStart");
+		Intent intent = new Intent(this, EasyLightService.class);
+		bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 		backPressed = 0;
-	}
-	
-	private void showAlertDialog(final String title, final String msg)
-	{
-		AlertDialog alert = new AlertDialog.Builder(EasyLight.this)
-		.create();
-		alert.setTitle(title);
-		alert.setMessage(msg);
-		alert.setButton(DialogInterface.BUTTON_POSITIVE, "Ok",new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				// closing the application
-				finish();
-			}
-		});
-
-		alert.show();
-	}
-	
-	private void activateTorch() throws Exception
-	{
-		mCamParams.setFlashMode(Parameters.FLASH_MODE_TORCH);
-		mCamParams.setFocusMode("FOCUS_MODE_INFINITY");
-		mCam.setParameters(mCamParams);
-		mCam.startPreview();
-	}
-	
-	private void deactivateTorch() throws Exception
-	{
-		mCamParams.setFlashMode(Parameters.FLASH_MODE_OFF);
-		mCam.setParameters(mCamParams);
-		mCam.stopPreview();
-	}
-	
-	@Override
-	protected void onPause() {
-	    super.onPause();
-//	    if(mCam != null){
-//	        mCam.release();
-//	    }
-	    backPressed = 0;
+//		Utils.generateNotification(context, view_cls, message)
 	}
 	
 	@Override
 	protected void onResume() {
-	    super.onResume();
-	    if(mCam == null){
-	        mCam = Camera.open();
-	        try {
-				if(mTorch.isChecked())
-					activateTorch();
-				else
-					deactivateTorch();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-	    }
+		super.onResume();
+		Log.d(Utils.APPNAME, "onResume");
 	}
 	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		Log.d(Utils.APPNAME, "onPause");
+		backPressed = 0;
+	}
+
 	@Override
 	protected void onStop() {
-	    super.onStop();
-	    if(mCam != null){
-	        mCam.release();
-	        mCam = null;
-	    }
-	}
-	
+		super.onStop();
+		Log.d(Utils.APPNAME, "onStop");
 
-    @Override
-    public void onBackPressed() {
-        if ((backPressed + 2000) > System.currentTimeMillis())
-        {
-            finish();
-        }
-        else
-        {
-            Toast.makeText(getApplicationContext(), getString(R.string.to_quit_msg), Toast.LENGTH_SHORT).show();
-            backPressed = System.currentTimeMillis();
-        }
-    }
-	
+		if(mBound)
+		{
+			unbindService(mConnection);
+			mBound = false;
+		}
+	}
+
+
+	@Override
+	public void onBackPressed() {
+		Log.d(Utils.APPNAME, "back pressed");
+		if ((backPressed + 2000) > System.currentTimeMillis())
+		{
+			finish();
+		}
+		else
+		{
+			Toast.makeText(getApplicationContext(), getString(R.string.to_quit_msg), Toast.LENGTH_SHORT).show();
+			backPressed = System.currentTimeMillis();
+		}
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		Log.i(APPNAME, "Created");
+		Log.d(Utils.APPNAME, "Created");
 		return true;
 	}
 
@@ -186,7 +145,7 @@ public class EasyLight extends ActionBarActivity
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	
+
 	/**
 	 * A placeholder fragment containing a simple view.
 	 */

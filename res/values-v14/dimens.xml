@@ -1,0 +1,5 @@
+<resources>
+	<dimen name="widget_margin">0dp</dimen>
+	
+	<dimen name="widgit_button_width">32dp</dimen>
+</resources>
