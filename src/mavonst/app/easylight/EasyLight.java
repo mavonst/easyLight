@@ -82,7 +82,7 @@ public class EasyLight extends ActionBarActivity
 		Intent intent = new Intent(this, EasyLightService.class);
 		bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 		backPressed = 0;
-//		Utils.generateNotification(context, view_cls, message)
+//		EasyLightNotification.generateNotification(getApplicationContext(), EasyLight.class, "whoop whoop");
 	}
 	
 	@Override
@@ -93,21 +93,25 @@ public class EasyLight extends ActionBarActivity
 	
 	@Override
 	protected void onPause() {
-		super.onPause();
 		Log.d(Utils.APPNAME, "onPause");
 		backPressed = 0;
+		super.onPause();
 	}
 
 	@Override
 	protected void onStop() {
-		super.onStop();
 		Log.d(Utils.APPNAME, "onStop");
-
+		super.onStop();
+	}
+	
+	@Override
+	protected void onDestroy() {
 		if(mBound)
 		{
 			unbindService(mConnection);
 			mBound = false;
 		}
+		super.onDestroy();
 	}
 
 

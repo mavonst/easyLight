@@ -12,7 +12,7 @@ import android.util.Log;
 public class EasyLightService extends Service
 {
 	private final IBinder mBinder = new LocalBinder();
-	FlashlightController flashlight;
+	FlashlightHolder flashlight;
 	
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -36,7 +36,7 @@ public class EasyLightService extends Service
 	public void onCreate() {
 		Log.d(Utils.APPNAME, "create service");
 		super.onCreate();
-		flashlight = new FlashlightController(this);
+		flashlight = FlashlightHolder.getInstance(this.getApplicationContext());
 	}
 	
 	@Override
@@ -95,6 +95,8 @@ public class EasyLightService extends Service
 	{
 		Log.d(Utils.APPNAME, "activate Flashlight");
 		flashlight.on();
+		EasyLightNotification.generateNotification(getApplicationContext(), "click to stop", EasyLight.class);
+
 	}
 	
 	public void deactivateTorch()

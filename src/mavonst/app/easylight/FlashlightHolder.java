@@ -11,18 +11,36 @@ import android.hardware.Camera.Parameters;
 import android.util.Log;
 import android.widget.Toast;
 
-public class FlashlightController {
 
+/**
+ * This singleton class is used to hold an {@code android.hardware.Camera} instance.
+ * <p>The {@code open()} and {@code release()} calls are similar to the ones
+* in {@code android.hardware.Camera}.
+ *
+ */
+public class FlashlightHolder {
+
+	private static FlashlightHolder mInstance;
 	Camera mCam;
 	Parameters mCamParams;
 	Context mContext;
 	boolean isFlashOn = false;
 	
-	public FlashlightController(Context base) {
+	private FlashlightHolder(Context base) {
 		mContext = base;
 		isFlashOn = open();
 	}
-
+	
+	public static FlashlightHolder getInstance(Context context)
+	{
+		if(mInstance != null)
+		{
+			return mInstance;
+		} else {
+			return new FlashlightHolder(context);
+		}
+	}
+	
 	public synchronized boolean open()
 	{
 		try{
@@ -42,15 +60,16 @@ public class FlashlightController {
 	public synchronized void close()
 	{
 		try{
-			if(mCam == null)
+			if(mCam == null) {
 				return;
-			
+			}
 			mCamParams.setFlashMode(Parameters.FLASH_MODE_OFF);
 			mCam.setParameters(mCamParams);
 			mCam.setPreviewCallback(null);
 			mCam.stopPreview();
 			mCam.release();
 			mCam = null;
+			mInstance = null;
 		} catch(Exception e)
 		{
 			 Log.d(Utils.APPNAME, "Exception closing flashlight " + e.getMessage());
